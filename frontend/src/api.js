@@ -1,4 +1,4 @@
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ;
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "/api";
 
 let accessToken = localStorage.getItem("accessToken") || "";
 let refreshToken = localStorage.getItem("refreshToken") || "";
@@ -18,6 +18,19 @@ export function clearTokens() {
 
 export function hasToken() {
   return Boolean(accessToken);
+}
+
+async function parseJsonResponse(response) {
+  const raw = await response.text();
+  if (!raw) {
+    return null;
+  }
+
+  try {
+    return JSON.parse(raw);
+  } catch {
+    throw new Error("Server returned a non-JSON response");
+  }
 }
 
 async function request(path, options = {}, retry = true) {
@@ -44,11 +57,16 @@ async function request(path, options = {}, retry = true) {
 
   if (!response.ok) {
     let message = "Request failed";
-    try {
-      const body = await response.json();
-      message = body.message || message;
-    } catch {
-      // Ignore JSON parse errors for non-JSON responses.
+    const bodyText = await response.text();
+    if (bodyText) {
+      try {
+        const body = JSON.parse(bodyText);
+        if (body?.message) {
+          message = body.message;
+        }
+      } catch {
+        message = bodyText.slice(0, 160);
+      }
     }
     throw new Error(message);
   }
@@ -57,7 +75,7 @@ async function request(path, options = {}, retry = true) {
     return null;
   }
 
-  return response.json();
+  return parseJsonResponse(response);
 }
 
 export async function refreshAuthToken() {
@@ -75,7 +93,12 @@ export async function refreshAuthToken() {
       return false;
     }
 
-    const data = await response.json();
+    const data = await parseJsonResponse(response);
+    if (!data?.accessToken || !data?.refreshToken) {
+      clearTokens();
+      return false;
+    }
+
     saveTokens(data);
     return true;
   } catch {
@@ -96,6 +119,11 @@ export async function login(payload) {
     method: "POST",
     body: JSON.stringify(payload)
   }, false);
+
+  if (!data?.accessToken || !data?.refreshToken) {
+    throw new Error("Login response is invalid. Check VITE_API_BASE_URL and backend auth route.");
+  }
+
   saveTokens(data);
   return data;
 }
