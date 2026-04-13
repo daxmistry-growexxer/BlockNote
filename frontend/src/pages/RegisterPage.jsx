@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, Navigate, useNavigate } from "react-router-dom";
-import { hasToken, login, register } from "../api";
+import { hasToken, register } from "../api";
 
 export default function RegisterPage() {
   const navigate = useNavigate();
@@ -20,7 +20,6 @@ export default function RegisterPage() {
 
     try {
       await register({ email, password });
-      await login({ email, password });
       navigate("/dashboard", { replace: true });
     } catch (err) {
       setError(err.message || "Registration failed");

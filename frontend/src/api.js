@@ -108,10 +108,17 @@ export async function refreshAuthToken() {
 }
 
 export async function register(payload) {
-  return request("/auth/register", {
+  const data = await request("/auth/register", {
     method: "POST",
     body: JSON.stringify(payload)
   }, false);
+
+  if (!data?.accessToken || !data?.refreshToken) {
+    throw new Error("Register response is invalid. Check VITE_API_BASE_URL and backend auth route.");
+  }
+
+  saveTokens(data);
+  return data;
 }
 
 export async function login(payload) {

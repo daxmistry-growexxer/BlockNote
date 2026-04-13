@@ -68,7 +68,18 @@ router.post("/register", async (req, res, next) => {
       [email, passwordHash]
     );
 
-    return res.status(201).json({ user: created.rows[0] });
+    const newUser = created.rows[0];
+    const { accessToken, refreshToken } = await createSessionTokens(newUser);
+
+    return res.status(201).json({
+      accessToken,
+      refreshToken,
+      user: {
+        id: newUser.id,
+        email: newUser.email,
+        created_at: newUser.created_at
+      }
+    });
   } catch (err) {
     return next(err);
   }
