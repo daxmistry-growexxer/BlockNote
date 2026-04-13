@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "nodemon src/server.js",
     "start": "node src/server.js",
-    "db:migrate": "psql \"postgresql://blocknote_njhg_user:2lTi0N8CdjsZswUJVW7nVlm53Ix1G7Bd@dpg-d7eeovpo3t8c73edi5t0-a/blocknote_njhg\" -f sql/schema.sql'"
+    "db:migrate": "psql \"postgresql://blocknote_njhg_user:2lTi0N8CdjsZswUJVW7nVlm53Ix1G7Bd@dpg-d7eeovpo3t8c73edi5t0-a/blocknote_njhg\" -f sql/schema.sql"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
