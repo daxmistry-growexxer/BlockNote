@@ -858,7 +858,7 @@ export default function DocumentEditorPage() {
     const currentTarget = event.currentTarget;
     const text = currentTarget.innerText || "";
     const selectionOffsets = getSelectionOffsetsInElement(currentTarget);
-    const caret = selectionOffsets ? selectionOffsets.start : text.length;
+    const caret = getCaretOffset(currentTarget);
 
     if (slash.open && slash.blockId === block.id) {
       if (event.key === "ArrowDown") {
@@ -1007,12 +1007,55 @@ export default function DocumentEditorPage() {
       }
 
       event.preventDefault();
-      clearScheduledSave(block.id, true);
-      const currentIndex = blocks.findIndex((item) => item.id === block.id);
-      const nextBlock = blocks[currentIndex + 1];
+      const zeroWidthCharPattern = /[\u200B\u200C\u200D\uFEFF]/;
+      const splitSourceText = text;
+      let normalizedCaret = caret;
 
-      const before = text.slice(0, caret);
-      const after = text.slice(caret);
+      for (let i = 0; i < Math.min(caret, splitSourceText.length); i += 1) {
+        if (zeroWidthCharPattern.test(splitSourceText[i])) {
+          normalizedCaret -= 1;
+        }
+      }
+
+      const normalizedText = splitSourceText.replace(/[\u200B\u200C\u200D\uFEFF]/g, "");
+      const safeCaret = Math.max(0, Math.min(normalizedText.length, normalizedCaret));
+      const currentIndex = blocks.findIndex((item) => item.id === block.id);
+      const previousBlock = currentIndex > 0 ? blocks[currentIndex - 1] : null;
+      const nextBlock = blocks[currentIndex + 1];
+      const isCaretAtStart = safeCaret === 0;
+
+      // If caret is at the start of a non-empty block, create a new empty paragraph above.
+      if (block.type !== "todo" && isCaretAtStart && normalizedText.trim() !== "") {
+        try {
+          setSaving(true);
+          const created = await createBlock(documentId, {
+            type: "paragraph",
+            content: { text: "" },
+            prevBlockId: previousBlock?.id || null,
+            nextBlockId: block.id
+          });
+
+          setBlocks((prev) => {
+            const insertAt = prev.findIndex((item) => item.id === block.id);
+            if (insertAt === -1) return prev;
+            const copy = [...prev];
+            copy.splice(insertAt, 0, created.block);
+            return copy;
+          });
+
+          focusRequest.current = { id: created.block.id, atEnd: false };
+        } catch (err) {
+          setError(err.message || "Failed to insert block");
+        } finally {
+          setSaving(hasPendingSaves());
+        }
+        return;
+      }
+
+      clearScheduledSave(block.id, true);
+
+      const before = normalizedText.slice(0, safeCaret);
+      const after = normalizedText.slice(safeCaret);
 
       try {
         setSaving(true);
