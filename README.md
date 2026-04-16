@@ -1,66 +1,82 @@
-# BlockNote (Day 1)
+# BlockNote
 
-This repo currently covers Day 1 only.
+BlockNote is a Notion-style document editor with block-based writing, authentication, document ownership enforcement, sharing, reorder support, and autosave.
 
-Implemented:
-- User auth (register/login/refresh/me/logout)
-- Document list dashboard (create, rename, delete, list)
-- PostgreSQL schema setup
+## Setup Instructions
 
-## Setup (Local)
+This repository currently uses local Postgres setup (equivalent to docker-compose workflow).
 
-1. Copy env file:
-- Copy `.env.example` to `backend/.env`
-- Copy `.env.example` to `frontend/.env`
+1. Create env files from the template.
+	- Copy `.env.example` to `backend/.env`
+	- Copy `.env.example` to `frontend/.env`
 
-3. Run backend:
-- `cd backend`
-- `npm install`
-- `npm run db:migrate`
-- `npm run dev`
+2. Start PostgreSQL locally and create the database.
+	- Ensure your `DATABASE_URL` in `backend/.env` points to your local Postgres instance.
+	- Example from `.env.example`: `postgres://blocknote:blocknote@localhost:5432/blocknote`
 
-4. Run frontend:
-- `cd frontend`
-- `npm install`
-- `npm run dev`
+3. Run database schema migration.
+	- Preferred command:
+	  - `cd backend`
+	  - `psql "$DATABASE_URL" -f sql/schema.sql`
 
-App URLs:
-- Frontend: `http://localhost:5173`
-- Backend: `http://localhost:4000`
+4. Run backend.
+	- `cd backend`
+	- `npm install`
+	- `npm run dev`
+
+5. Run frontend.
+	- `cd frontend`
+	- `npm install`
+	- `npm run dev`
+
+6. Open the app.
+	- Frontend: `http://localhost:5173`
+	- Backend API: `http://localhost:4000/api`
 
 ## Environment Variables
 
-Check `.env.example` for full list.
+Reference: `.env.example`
 
-- `PORT`: backend port
-- `DATABASE_URL`: postgres connection string
-- `JWT_ACCESS_SECRET`: access token secret
-- `JWT_REFRESH_SECRET`: refresh token secret
-- `REFRESH_TOKEN_TTL_DAYS`: refresh token expiry in days
-- `CLIENT_URL`: allowed frontend origin
-- `VITE_API_BASE_URL`: backend API base URL for frontend
+- `PORT` (backend): Express server port.
+- `DATABASE_URL` (backend): PostgreSQL connection string used by the API.
+- `JWT_ACCESS_SECRET` (backend): Secret key for signing/verifying short-lived access tokens.
+- `JWT_REFRESH_SECRET` (backend): Secret key for signing/verifying refresh tokens.
+- `REFRESH_TOKEN_TTL_DAYS` (backend): Refresh token lifetime in days.
+- `CLIENT_URL` (backend): Allowed CORS origin for frontend requests.
+- `VITE_API_BASE_URL` (frontend): Base URL for frontend API calls.
+
+Additional supported backend vars (not currently listed in `.env.example`):
+- `SHARE_TOKEN_TTL_MINUTES`: Share-token TTL configuration.
+- `COOKIE_SECURE`: Forces secure cookie mode when set to `true`.
 
 ## Architecture Decisions
 
-- Express + PostgreSQL + React (simple and quick for assignment timeline)
-- Parameterized SQL queries for safety
-- JWT access + refresh token flow
-- Server-side ownership checks for documents
+- **React + Vite (frontend):** Fast development workflow and small project footprint.
+- **Express + PostgreSQL (backend):** Simple, explicit API and relational data model for users/documents/blocks.
+- **SQL-first data layer:** Direct SQL with parameterized placeholders for predictable behavior and security.
+- **JWT + refresh-token session design:** Short-lived access tokens with revocable refresh tokens in DB.
+- **Server-side authorization checks:** Document ownership and share access are enforced by backend routes, not only UI.
+- **Per-block autosave queue:** Saves are serialized per block to avoid stale request overwrites.
+- **Fractional ordering strategy:** `order_index` uses floating values and midpoint insertion, with renormalization when gaps become too small.
 
-## Known Issues / Incomplete
+## Known Issues
 
-- Block editor behavior is not done yet (Day 2-3)
-- Drag reorder, autosave race handling, share link are not done yet (Day 4)
-- Final edge-case hardening and final docs are pending (Day 5)
+- No automated test suite is included yet (API and UI are currently validated manually).
+- `backend/package.json` has a `db:migrate` script with a hardcoded remote connection string; use `psql "$DATABASE_URL" -f sql/schema.sql` for local setup.
+- No real-time multi-user collaboration (WebSocket/OT/CRDT) is implemented.
+- Conflict control is client-queue based; there is no server-side optimistic locking/version conflict response yet.
+- Root-level docker-compose file is not present in the current repo state, so setup is local Postgres equivalent.
 
 ## Edge Case Decisions
 
-- order_index precision: schema uses float (`DOUBLE PRECISION`), normalization logic pending Day 4.
-- Share token read-only at API level: share API not implemented yet.
-- Auto-save race condition: auto-save not implemented yet.
-- Document ownership: implemented. Returns `403` when user tries another user's document.
+- **Share token read-only at API level:** Share-token endpoints are GET-only and write routes require access-token auth, so shared viewers cannot mutate data.
+- **Document ownership enforcement:** `GET /documents/:id` checks owner identity on the server and returns `403` for cross-account access to prevent data leakage.
+- **Autosave stale overwrite protection:** Saves are queued and executed sequentially per block so older in-flight requests cannot overwrite newer edits.
+- **Order index precision:** `order_index` is stored as floating point (`DOUBLE PRECISION`) and midpoint insertion is used for reorder/insert flexibility.
+- **Order gap collapse handling:** When adjacent-order gap drops below `0.001`, order indexes are renormalized to restore insertion headroom.
+- **SQL injection prevention:** All DB operations use parameterized queries with placeholders instead of runtime string interpolation.
 
-## Day 1 API
+## Main API Surface
 
 Auth:
 - `POST /api/auth/register`
@@ -75,3 +91,14 @@ Documents:
 - `GET /api/documents/:id`
 - `PATCH /api/documents/:id`
 - `DELETE /api/documents/:id`
+- `POST /api/documents/:id/share`
+- `DELETE /api/documents/:id/share`
+- `GET /api/documents/share/:token`
+- `GET /api/documents/share/:token/blocks`
+
+Blocks:
+- `GET /api/documents/:id/blocks`
+- `POST /api/documents/:id/blocks`
+- `PATCH /api/documents/:id/blocks/:blockId`
+- `PATCH /api/documents/:id/blocks/:blockId/reorder`
+- `DELETE /api/documents/:id/blocks/:blockId`
