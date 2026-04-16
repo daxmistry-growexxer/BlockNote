@@ -7,7 +7,7 @@ import { errorHandler, notFoundHandler } from "./middleware/error.js";
 
 const app = express();
 
-app.use(cors({ origin: config.clientUrl }));
+app.use(cors({ origin: config.clientUrl, credentials: true }));
 app.use(express.json());
 
 app.get("/api/health", (req, res) => {

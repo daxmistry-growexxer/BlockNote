@@ -10,6 +10,8 @@ for (const key of required) {
   }
 }
 
+const runtimeEnv = process.env.NODE_ENV || process.env.MODE_ENV || "development";
+
 export const config = {
   port: Number(process.env.PORT || 4000),
   clientUrl: process.env.CLIENT_URL || "http://localhost:5173",
@@ -17,5 +19,7 @@ export const config = {
   jwtAccessSecret: process.env.JWT_ACCESS_SECRET,
   jwtRefreshSecret: process.env.JWT_REFRESH_SECRET,
   accessTokenTtl: "15m",
-  refreshTokenTtlDays: Number(process.env.REFRESH_TOKEN_TTL_DAYS || 7)
+  refreshTokenTtlDays: Number(process.env.REFRESH_TOKEN_TTL_DAYS || 7),
+  shareTokenTtlMinutes: Number(process.env.SHARE_TOKEN_TTL_MINUTES || 60),
+  cookieSecure: process.env.COOKIE_SECURE === "true" || runtimeEnv === "production"
 };

@@ -14,6 +14,7 @@ CREATE TABLE IF NOT EXISTS documents (
   title TEXT NOT NULL,
   share_token TEXT UNIQUE,
   is_public BOOLEAN NOT NULL DEFAULT FALSE,
+  share_expires_at TIMESTAMPTZ,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
@@ -23,6 +24,7 @@ CREATE TABLE IF NOT EXISTS blocks (
   type TEXT NOT NULL,
   content JSONB NOT NULL DEFAULT '{}'::jsonb,
   order_index DOUBLE PRECISION NOT NULL,
+  version INTEGER NOT NULL DEFAULT 1,
   parent_id BIGINT REFERENCES blocks(id) ON DELETE SET NULL,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   CONSTRAINT blocks_type_check CHECK (

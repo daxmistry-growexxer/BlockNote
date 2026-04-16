@@ -13,6 +13,43 @@ import {
 
 const router = express.Router();
 
+function getRefreshCookieOptions() {
+  return {
+    httpOnly: true,
+    sameSite: "lax",
+    secure: config.cookieSecure,
+    path: "/api/auth",
+    expires: getRefreshExpiryDate()
+  };
+}
+
+function setRefreshTokenCookie(res, refreshToken) {
+  res.cookie("refreshToken", refreshToken, getRefreshCookieOptions());
+}
+
+function clearRefreshTokenCookie(res) {
+  res.clearCookie("refreshToken", {
+    httpOnly: true,
+    sameSite: "lax",
+    secure: config.cookieSecure,
+    path: "/api/auth"
+  });
+}
+
+function getRefreshTokenFromRequest(req) {
+  const cookieHeader = String(req.headers.cookie || "");
+  if (!cookieHeader) return "";
+
+  const cookie = cookieHeader
+    .split(";")
+    .map((part) => part.trim())
+    .find((part) => part.startsWith("refreshToken="));
+
+  if (!cookie) return "";
+
+  return decodeURIComponent(cookie.slice("refreshToken=".length));
+}
+
 function isValidPassword(password) {
   return /^(?=.*\d).{8,}$/.test(password);
 }
@@ -70,10 +107,10 @@ router.post("/register", async (req, res, next) => {
 
     const newUser = created.rows[0];
     const { accessToken, refreshToken } = await createSessionTokens(newUser);
+    setRefreshTokenCookie(res, refreshToken);
 
     return res.status(201).json({
       accessToken,
-      refreshToken,
       user: {
         id: newUser.id,
         email: newUser.email,
@@ -105,10 +142,10 @@ router.post("/login", async (req, res, next) => {
     }
 
     const { accessToken, refreshToken } = await createSessionTokens(user);
+    setRefreshTokenCookie(res, refreshToken);
 
     return res.json({
       accessToken,
-      refreshToken,
       user: {
         id: user.id,
         email: user.email
@@ -121,9 +158,9 @@ router.post("/login", async (req, res, next) => {
 
 router.post("/refresh", async (req, res, next) => {
   try {
-    const refreshToken = String(req.body.refreshToken || "");
+    const refreshToken = getRefreshTokenFromRequest(req);
     if (!refreshToken) {
-      return res.status(400).json({ message: "refreshToken is required" });
+      return res.status(401).json({ message: "Missing refresh token" });
     }
 
     let payload;
@@ -168,8 +205,9 @@ router.post("/refresh", async (req, res, next) => {
 
     await query("UPDATE refresh_tokens SET revoked_at = NOW() WHERE id = $1", [stored.id]);
     const { accessToken: newAccessToken, refreshToken: newRefreshToken } = await createSessionTokens(user);
+    setRefreshTokenCookie(res, newRefreshToken);
 
-    return res.json({ accessToken: newAccessToken, refreshToken: newRefreshToken });
+    return res.json({ accessToken: newAccessToken });
   } catch (err) {
     return next(err);
   }
@@ -195,6 +233,7 @@ router.get("/me", authRequired, async (req, res, next) => {
 router.post("/logout", authRequired, async (req, res, next) => {
   try {
     await query("UPDATE refresh_tokens SET revoked_at = NOW() WHERE user_id = $1", [req.user.id]);
+    clearRefreshTokenCookie(res);
     return res.status(204).send();
   } catch (err) {
     return next(err);
