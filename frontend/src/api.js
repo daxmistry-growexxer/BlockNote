@@ -1,19 +1,23 @@
-const API_BASE_URL = import.meta.env.VITE_API_URL;
+const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL ||
+  import.meta.env.VITE_API_URL ||
+  "http://localhost:4000/api";
 
-let accessToken = localStorage.getItem("accessToken") || "";
-let refreshToken = localStorage.getItem("refreshToken") || "";
+let accessToken = sessionStorage.getItem("accessToken") || "";
+
+localStorage.removeItem("accessToken");
+localStorage.removeItem("refreshToken");
 
 export function saveTokens(tokens) {
   accessToken = tokens.accessToken || "";
-  refreshToken = tokens.refreshToken || "";
-  if (accessToken) localStorage.setItem("accessToken", accessToken);
-  else localStorage.removeItem("accessToken");
-  if (refreshToken) localStorage.setItem("refreshToken", refreshToken);
-  else localStorage.removeItem("refreshToken");
+  if (accessToken) sessionStorage.setItem("accessToken", accessToken);
+  else sessionStorage.removeItem("accessToken");
+  localStorage.removeItem("accessToken");
+  localStorage.removeItem("refreshToken");
 }
 
 export function clearTokens() {
-  saveTokens({ accessToken: "", refreshToken: "" });
+  saveTokens({ accessToken: "" });
 }
 
 export function hasToken() {
@@ -45,10 +49,11 @@ async function request(path, options = {}, retry = true) {
 
   const response = await fetch(`${API_BASE_URL}${path}`, {
     ...options,
+    credentials: "include",
     headers
   });
 
-  if (response.status === 401 && retry && refreshToken) {
+  if (response.status === 401 && retry) {
     const refreshed = await refreshAuthToken();
     if (refreshed) {
       return request(path, options, false);
@@ -79,13 +84,10 @@ async function request(path, options = {}, retry = true) {
 }
 
 export async function refreshAuthToken() {
-  if (!refreshToken) return false;
-
   try {
     const response = await fetch(`${API_BASE_URL}/auth/refresh`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ refreshToken })
+      credentials: "include"
     });
 
     if (!response.ok) {
@@ -94,7 +96,7 @@ export async function refreshAuthToken() {
     }
 
     const data = await parseJsonResponse(response);
-    if (!data?.accessToken || !data?.refreshToken) {
+    if (!data?.accessToken) {
       clearTokens();
       return false;
     }
@@ -113,8 +115,8 @@ export async function register(payload) {
     body: JSON.stringify(payload)
   }, false);
 
-  if (!data?.accessToken || !data?.refreshToken) {
-    throw new Error("Register response is invalid. Check VITE_API_BASE_URL and backend auth route.");
+  if (!data?.accessToken) {
+    throw new Error("Registration response is invalid. Check VITE_API_BASE_URL and backend auth route.");
   }
 
   saveTokens(data);
@@ -127,7 +129,7 @@ export async function login(payload) {
     body: JSON.stringify(payload)
   }, false);
 
-  if (!data?.accessToken || !data?.refreshToken) {
+  if (!data?.accessToken) {
     throw new Error("Login response is invalid. Check VITE_API_BASE_URL and backend auth route.");
   }
 
@@ -169,4 +171,61 @@ export async function deleteDocument(id) {
   return request(`/documents/${id}`, {
     method: "DELETE"
   });
+}
+
+export async function getDocument(id) {
+  return request(`/documents/${id}`);
+}
+
+export async function enableDocumentShare(id) {
+  return request(`/documents/${id}/share`, {
+    method: "POST"
+  });
+}
+
+export async function disableDocumentShare(id) {
+  return request(`/documents/${id}/share`, {
+    method: "DELETE"
+  });
+}
+
+export async function listBlocks(documentId) {
+  return request(`/documents/${documentId}/blocks`);
+}
+
+export async function createBlock(documentId, payload) {
+  return request(`/documents/${documentId}/blocks`, {
+    method: "POST",
+    body: JSON.stringify(payload)
+  });
+}
+
+export async function updateBlock(documentId, blockId, payload, options = {}) {
+  return request(`/documents/${documentId}/blocks/${blockId}`, {
+    method: "PATCH",
+    body: JSON.stringify(payload),
+    ...options,
+    signal: options.signal
+  });
+}
+
+export async function deleteBlock(documentId, blockId) {
+  return request(`/documents/${documentId}/blocks/${blockId}`, {
+    method: "DELETE"
+  });
+}
+
+export async function reorderBlock(documentId, blockId, payload) {
+  return request(`/documents/${documentId}/blocks/${blockId}/reorder`, {
+    method: "PATCH",
+    body: JSON.stringify(payload)
+  });
+}
+
+export async function getSharedDocument(token) {
+  return request(`/documents/share/${token}`, {}, false);
+}
+
+export async function listSharedBlocks(token) {
+  return request(`/documents/share/${token}/blocks`, {}, false);
 }
