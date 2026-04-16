@@ -3,6 +3,7 @@ import { ArrowRight, Blocks, FileText, ShieldCheck, Sparkles } from "lucide-reac
 import { Badge } from "../components/ui/badge";
 import { Button } from "../components/ui/button";
 import { Card, CardContent } from "../components/ui/card";
+import BrandLogo from "../components/BrandLogo";
 
 export default function HomePage() {
   const features = [
@@ -33,14 +34,7 @@ export default function HomePage() {
   return (
     <main className="page-shell py-6 sm:py-8">
       <nav className="mb-6 flex items-center justify-between gap-4 rounded-2xl border border-border/80 bg-background/90 px-4 py-3 backdrop-blur supports-[backdrop-filter]:bg-background/75">
-        <Link
-          to="/"
-          className="inline-flex items-center gap-3 text-sm font-semibold tracking-[-0.02em]"
-          aria-label="BlockNote home"
-        >
-          <span className="h-2.5 w-2.5 rounded-sm bg-primary" aria-hidden="true" />
-          <span>BlockNote</span>
-        </Link>
+        <BrandLogo linked className="text-sm font-semibold tracking-[-0.02em]" />
         <div className="flex items-center gap-2">
           <Button asChild variant="ghost">
             <Link to="/login">Login</Link>
@@ -96,29 +90,45 @@ export default function HomePage() {
                 <span className="text-xs font-medium text-muted-foreground">Untitled</span>
               </div>
             </div>
-            <div className="space-y-5 p-6">
-              <div className="space-y-3">
-                <div className="h-4 w-1/3 rounded-full bg-stone-300/80" />
-                <div className="h-14 w-3/4 rounded-2xl bg-card" />
+            <div className="space-y-4 p-6">
+              <div className="space-y-2 rounded-2xl border border-border/70 bg-card/95 p-4">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">Heading 1</p>
+                <h3 className="text-lg font-semibold tracking-[-0.03em] text-foreground">Daily Notes</h3>
+                <p className="text-sm leading-6 text-muted-foreground">
+                  Capture ideas fast, then turn them into structured blocks without losing context.
+                </p>
               </div>
-              <div className="space-y-3 rounded-2xl border border-border/70 bg-card/90 p-5">
-                <div className="h-3 w-2/5 rounded-full bg-stone-200" />
+
+              <div className="space-y-3 rounded-2xl border border-border/70 bg-card/90 p-4">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">Todo</p>
                 <div className="space-y-2">
-                  <div className="h-3 w-full rounded-full bg-stone-100" />
-                  <div className="h-3 w-4/5 rounded-full bg-stone-100" />
-                  <div className="h-3 w-3/5 rounded-full bg-stone-100" />
+                  <div className="flex items-center gap-2 text-sm text-foreground">
+                    <span className="h-4 w-4 rounded border border-border bg-background" />
+                    Draft API edge-case tests
+                  </div>
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <span className="h-4 w-4 rounded border border-border bg-background" />
+                    Polish onboarding copy
+                  </div>
                 </div>
               </div>
-              <div className="space-y-3 rounded-2xl border border-border/70 bg-card/90 p-5">
-                <div className="h-3 w-1/4 rounded-full bg-stone-200" />
-                <div className="flex items-center gap-3">
-                  <span className="h-5 w-5 rounded-md border border-border bg-background" />
-                  <div className="h-3 w-3/5 rounded-full bg-stone-100" />
+
+              <div className="space-y-3 rounded-2xl border border-border/70 bg-card/90 p-4">
+                <div className="flex items-center justify-between gap-2">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">Code</p>
+                  <span className="rounded-full bg-secondary px-2 py-0.5 text-[10px] text-muted-foreground">Snippet</span>
                 </div>
-                <div className="flex items-center gap-3">
-                  <span className="h-5 w-5 rounded-md border border-border bg-background" />
-                  <div className="h-3 w-2/5 rounded-full bg-stone-100" />
-                </div>
+                <pre className="overflow-hidden rounded-xl bg-stone-950/95 p-3 text-[11px] leading-5 text-stone-100">
+{`const saveState = {
+  inFlight: true,
+  queued: 2
+};`}
+                </pre>
+              </div>
+
+              <div className="rounded-2xl border border-border/70 bg-gradient-to-br from-stone-200/55 to-stone-100/35 p-4">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">Image</p>
+                <div className="mt-2 h-16 rounded-xl border border-white/60 bg-gradient-to-r from-white/70 via-white/40 to-white/70" />
               </div>
             </div>
           </CardContent>

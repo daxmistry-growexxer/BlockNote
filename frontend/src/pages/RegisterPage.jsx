@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
 import { Link, Navigate, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
-import { ArrowRight, Mail, ShieldCheck, Sparkles } from "lucide-react";
+import { ArrowRight, Eye, EyeOff, Mail, ShieldCheck, Sparkles } from "lucide-react";
 import { hasToken, refreshAuthToken, register } from "../api";
+import BrandLogo from "../components/BrandLogo";
 import { Badge } from "../components/ui/badge";
 import { Button } from "../components/ui/button";
 import { Card, CardContent } from "../components/ui/card";
@@ -13,6 +14,7 @@ export default function RegisterPage() {
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [checkingSession, setCheckingSession] = useState(false);
@@ -81,10 +83,7 @@ export default function RegisterPage() {
         <Card className="overflow-hidden border-border/80 bg-card/95">
           <CardContent className="flex h-full flex-col justify-between gap-8 p-8 sm:p-10">
             <div className="space-y-6">
-              <div className="inline-flex items-center gap-3 text-sm font-semibold tracking-[-0.02em]">
-                <span className="h-2.5 w-2.5 rounded-sm bg-primary" />
-                <span>BlockNote</span>
-              </div>
+              <BrandLogo linked className="text-sm font-semibold tracking-[-0.02em]" />
               <Badge variant="subtle" className="w-fit gap-2 rounded-full px-3 py-1 uppercase tracking-[0.16em]">
                 <Sparkles className="h-3.5 w-3.5" />
                 Notion-style onboarding
@@ -142,7 +141,7 @@ export default function RegisterPage() {
                   <ShieldCheck className="h-4 w-4 text-muted-foreground" />
                   <Input
                     id="password"
-                    type="password"
+                    type={showPassword ? "text" : "password"}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="Min 8 chars + 1 number"
@@ -150,6 +149,14 @@ export default function RegisterPage() {
                     className="border-0 px-0 shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
                     required
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((prev) => !prev)}
+                    className="text-muted-foreground transition-colors hover:text-foreground"
+                    aria-label={showPassword ? "Hide password" : "Show password"}
+                  >
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
                 </div>
               </div>
 
