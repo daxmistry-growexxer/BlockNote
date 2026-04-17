@@ -34,7 +34,7 @@ I kept the server-side check and made non-owner access return `403` so authoriza
 
 ## Day 2–3
 
-### 2026-04-14
+### 2026-04-14 -- ### 2026-04-15
 
 **Tool:** Copilot
 
@@ -68,7 +68,7 @@ I kept the block-specific renderers and wired the slash menu to the active block
 
 ## Day 4
 
-### 2026-04-15
+### 2026-04-16
 
 **Tool:** Copilot
 
@@ -118,7 +118,7 @@ I kept the share endpoints GET-only and required access-token auth for write rou
 
 ## Day 5
 
-### 2026-04-16
+### 2026-04-17
 
 **Tool:** Manual coding (no AI code generation used)
 
@@ -133,3 +133,34 @@ Auto-generated docs were too optimistic in places and did not always match the r
 
 **What I changed and why:**
 I handled the final edge-case wording, wrote the AI log and README entries manually, and kept the submission accurate and defensible.
+
+---
+
+## Required Entries Summary (Simple Version)
+
+### 1) Enter mid-block split
+
+I asked Copilot to make Enter split a block at the cursor.
+It gave me a basic split flow that created a new block and moved text after the cursor.
+The main issue was cursor and focus jumping after re-render, and a few edge cases around Enter/Backspace near block boundaries.
+I fixed it by adding focus/caret restore logic with refs and applying focus after render, so typing now feels stable.
+
+### 2) order_index handling
+
+I asked Copilot for stable insert and drag reorder using order_index.
+The early direction was close to integer-style ordering, but that is not stable for repeated inserts between two blocks.
+I changed it to floating values (DOUBLE PRECISION), used midpoint insertion, and added renormalization when gaps become too small.
+This keeps ordering stable over time.
+
+### 3) Cross-account access protection
+
+I asked Copilot to stop cross-account document access.
+It generated ownership checks comparing document user_id with req.user.id.
+I made sure these checks are enforced on backend routes (not just the frontend) and return 403 for non-owners.
+That way users cannot access other users' documents even if UI checks are bypassed.
+
+### 4) Manual coding instead of AI
+
+For final documentation and edge-case wording, I chose to write manually instead of using AI.
+The reason is simple: AI drafts were sometimes too optimistic or not fully aligned with actual repository behavior.
+I manually updated README and AI_LOG wording so the final submission is accurate, honest, and easy to defend during evaluation.
