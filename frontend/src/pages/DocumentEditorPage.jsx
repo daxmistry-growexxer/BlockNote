@@ -411,10 +411,6 @@ export default function DocumentEditorPage() {
 
   function handleTextareaChange(event, block) {
     const nextText = event.target.value;
-    updateBlockLocal(block.id, (current) => ({
-      ...current,
-      content: { ...current.content, text: nextText }
-    }));
     scheduleTextSave(block, nextText);
   }
 
@@ -1218,12 +1214,6 @@ export default function DocumentEditorPage() {
 
   function handleEditableInput(event, block) {
     const nextText = event.currentTarget.innerText || "";
-    if (block.type === "code") {
-      updateBlockLocal(block.id, (current) => ({
-        ...current,
-        content: { text: nextText }
-      }));
-    }
     scheduleTextSave(block, nextText);
   }
 
@@ -1634,7 +1624,7 @@ export default function DocumentEditorPage() {
 
               <div className="rounded-[28px] border border-border/80 bg-card shadow-[0_1px_0_rgba(255,255,255,0.8)_inset]">
                 <section className="mx-auto flex min-h-[70vh] w-full max-w-3xl flex-col gap-1 px-4 py-8 sm:px-10">
-                  {blocks.map((block) => (
+                  {blocks.map((block, blockIndex) => (
                     <article
                       key={block.id}
                       className={`group relative py-1 transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] will-change-transform ${draggingBlockId === block.id ? "z-20 scale-[0.985] translate-y-1 opacity-60 rounded-2xl bg-background/70 shadow-[0_18px_40px_rgba(0,0,0,0.12)] ring-1 ring-border/60 backdrop-blur-sm" : ""} ${slash.open && slash.blockId === block.id ? "z-30" : ""} ${dropIndicator?.blockId === block.id && dropIndicator.position === "before" ? "pt-4" : ""} ${dropIndicator?.blockId === block.id && dropIndicator.position === "after" ? "pb-4" : ""}`}
@@ -1677,7 +1667,7 @@ export default function DocumentEditorPage() {
                         </div>
                       </div>
 
-                      {blocks.findIndex((item) => item.id === block.id) > 0 && (
+                      {blockIndex > 0 && (
                         <div className="absolute -right-16 top-1/2 z-10 -translate-y-1/2 text-muted-foreground sm:-right-20">
                           <button
                             type="button"
@@ -1835,7 +1825,7 @@ function renderBlock(block, handlers) {
         <textarea
           ref={(el) => handlers.setBlockRef(block.id, el)}
           className="editor-code w-full bg-stone-100 border border-stone-300 rounded-xl px-4 py-3 font-mono text-[13px] leading-6 text-stone-900 shadow-sm outline-none resize-none overflow-hidden"
-          value={text}
+          defaultValue={text}
           onChange={(e) => {
             handlers.handleTextareaChange(e, block);
             // Auto-resize
