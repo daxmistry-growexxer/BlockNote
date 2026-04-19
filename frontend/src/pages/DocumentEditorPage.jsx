@@ -387,7 +387,7 @@ export default function DocumentEditorPage() {
     if (editable instanceof HTMLTextAreaElement) {
       return editable.value || fallback;
     }
-    return editable.innerText || "";
+    return editable.textContent || "";
   }
 
   function getLatestBlock(blockId) {
@@ -406,6 +406,18 @@ export default function DocumentEditorPage() {
 
     if (dismissToast) {
       toast.dismiss(`save-${blockId}`);
+    }
+  }
+
+  async function deleteBlockSafely(blockId) {
+    try {
+      await deleteBlock(documentId, blockId);
+      return true;
+    } catch (err) {
+      if (err.message === "Block not found") {
+        return false;
+      }
+      throw err;
     }
   }
 
@@ -634,7 +646,7 @@ export default function DocumentEditorPage() {
 
     pendingSavePayloads.current[block.id] = { content: nextContent };
     // Show saving immediately while debounce timer is pending.
-    setSaving(true);
+    setSaving((current) => current || true);
 
     saveTimers.current[block.id] = setTimeout(async () => {
       delete saveTimers.current[block.id];
@@ -752,7 +764,7 @@ export default function DocumentEditorPage() {
     clearScheduledSave(blockId, true);
     delete queuedSavePayloads.current[blockId];
 
-    await deleteBlock(documentId, blockId);
+    await deleteBlockSafely(blockId);
     setBlocks((prev) => prev.filter((item) => item.id !== blockId));
 
     if (previousBlock && TEXT_LIKE_TYPES.has(previousBlock.type)) {
@@ -787,7 +799,7 @@ export default function DocumentEditorPage() {
     clearScheduledSave(blockId, true);
     delete queuedSavePayloads.current[blockId];
 
-    await deleteBlock(documentId, blockId);
+    await deleteBlockSafely(blockId);
     setBlocks((prev) => prev.filter((item) => item.id !== blockId));
 
     if (focusBlockId) {
@@ -1190,7 +1202,7 @@ export default function DocumentEditorPage() {
     if (editable) {
       const nextText = editable instanceof HTMLTextAreaElement
         ? (editable.value || "")
-        : (editable.innerText || "");
+        : (editable.textContent || "");
       updateBlockLocal(blockId, (current) => {
         if (current.type === "todo") {
           return { ...current, content: { ...(current.content || {}), text: nextText } };
@@ -1213,7 +1225,7 @@ export default function DocumentEditorPage() {
   }
 
   function handleEditableInput(event, block) {
-    const nextText = event.currentTarget.innerText || "";
+    const nextText = event.currentTarget.textContent || "";
     scheduleTextSave(block, nextText);
   }
 
@@ -1501,7 +1513,7 @@ export default function DocumentEditorPage() {
       setSaving(true);
       clearScheduledSave(blockId, true);
       delete queuedSavePayloads.current[blockId];
-      await deleteBlock(documentId, blockId);
+      await deleteBlockSafely(blockId);
       setBlocks((prev) => prev.filter((item) => item.id !== blockId));
     } catch (err) {
       setError(err.message || "Failed to delete block");
