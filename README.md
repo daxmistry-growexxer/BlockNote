@@ -102,3 +102,7 @@ Blocks:
 - `PATCH /api/documents/:id/blocks/:blockId`
 - `PATCH /api/documents/:id/blocks/:blockId/reorder`
 - `DELETE /api/documents/:id/blocks/:blockId`
+
+## Deployment Link
+
+https://blocknote-app-ro1j.onrender.com
